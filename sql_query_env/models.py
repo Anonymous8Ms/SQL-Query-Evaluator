@@ -1,13 +1,15 @@
-from dataclasses import dataclass
-from typing import Optional
+from openenv.core.env_server.types import Action, Observation
+from pydantic import Field
 
-@dataclass
-class SqlQueryAction:
-    sql_query: str
 
-@dataclass
-class SqlQueryObservation:
+class SQLAction(Action):
+    sql_query: str = Field(..., description="SQL query string")
+
+
+class SQLObservation(Observation):
     question: str
     schema: str
     difficulty: str
-    feedback: Optional[str] = None
+    reward: float
+    done: bool
+    feedback: str
