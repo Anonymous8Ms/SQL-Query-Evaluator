@@ -1,12 +1,13 @@
 from dataclasses import dataclass
+from typing import Optional
 
 @dataclass
-class SQLAction:
-    query: str
-
+class SqlQueryAction:
+    sql_query: str
 
 @dataclass
-class SQLObservation:
-    score: float
-    feedback: str
-    done: bool
+class SqlQueryObservation:
+    question: str
+    schema: str
+    difficulty: str
+    feedback: Optional[str] = None
