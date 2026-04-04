@@ -1,2 +1,0 @@
-[console_scripts]
-server = sql_query_env.server.app:main
