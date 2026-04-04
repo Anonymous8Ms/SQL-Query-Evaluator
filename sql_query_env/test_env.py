@@ -1,18 +1,17 @@
 from server.sql_query_env_environment import SqlQueryEnvironment
 from models import SQLAction
+from server.grader import SQLGrader
 
-class DummyGrader:
-    def evaluate(self, predicted_query, expected_query):
-        if predicted_query.strip().lower() == expected_query.strip().lower():
-            return 1.0, "Correct"
-        return 0.0, "Incorrect"
-
-env = SqlQueryEnvironment(grader=DummyGrader())
+env = SqlQueryEnvironment(grader=SQLGrader())
 
 q = env.reset()
 print("Question:", q)
 
-action = SQLAction(query="SELECT * FROM users WHERE age > 30;")
+# Try a WRONG query to test properly
+# action = SQLAction(query="SELECT name FROM users;")
+# action = SQLAction(query="SELECT * FROM users WHERE age > 30;")
+# action = SQLAction(query="SELECT name FROM users;")
+action = SQLAction(query="SELECT * FROM random_table;")
 
 obs = env.step(action)
 

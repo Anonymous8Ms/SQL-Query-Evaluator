@@ -1,37 +1,41 @@
 import random
-from models import SQLAction, SQLObservation
+from server.grader import grade_query
+from server.database import get_db_connection
+from models import SqlQueryAction, SqlQueryObservation
 from tasks import TASKS
 
+
 class SqlQueryEnvironment:
-    def __init__(self, grader):
-        self.grader = grader
-        self.current_task = None
-        self.attempts = 0
+
+    def __init__(self):
+        self._db = get_db_connection()
+        self._current_task = None
 
     def reset(self):
-        self.current_task = random.choice(TASKS)
-        self.attempts = 0
-        return self.current_task["question"]
+        self._current_task = random.choice(TASKS)
 
-    def step(self, action: SQLAction):
-        self.attempts += 1
-
-        score, feedback = self.grader.evaluate(
-            predicted_query=action.query,
-            expected_query=self.current_task["expected_query"]
+        return SqlQueryObservation(
+            question=self._current_task["question"],
+            schema=self._current_task["schema"],
+            difficulty=self._current_task["difficulty"],
+            reward=0.0,
+            done=False,
+            feedback=""
         )
 
-        done = True
+    def step(self, action: SqlQueryAction):
 
-        return SQLObservation(
-            score=score,
-            feedback=feedback,
-            done=done
+        reward, feedback = grade_query(
+            ai_query=action.sql_query,
+            task=self._current_task,
+            db_connection=self._db
         )
 
-    def state(self):
-        return {
-            "task_id": self.current_task["id"],
-            "difficulty": self.current_task["difficulty"],
-            "attempts": self.attempts
-        }
+        return SqlQueryObservation(
+            question=self._current_task["question"],
+            schema=self._current_task["schema"],
+            difficulty=self._current_task["difficulty"],
+            reward=reward,
+            done=True,
+            feedback=feedback
+        )
