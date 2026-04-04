@@ -23,11 +23,14 @@ class SqlQueryEnvironment:
         )
 
     def step(self, action):
-        score, feedback = grade_query(
-            ai_query=action.sql_query,
-            task=self.current_task,
-            db_connection=self._db
-        )
+         result = grade_query(
+    ai_query=action.sql_query,
+    task=self.current_task,
+    db_connection=self._db
+)
+
+score = result["score"]
+feedback = result["feedback"]
 
         return SQLObservation(
             question=self.current_task["question"],
