@@ -9,25 +9,41 @@ HF_SPACE_URL = os.getenv("HF_SPACE_URL")
 
 client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
 
+
 def run_episode():
-    res = requests.get(f"{HF_SPACE_URL}/reset")
-    data = res.json()
+    try:
+        res = requests.get(f"{HF_SPACE_URL}/reset")
+        data = res.json()
+    except:
+        print("Reset failed")
+        return 0
 
     done = False
     total_reward = 0
 
     while not done:
-        question = data.get("question", "")
+        question = data.get("question")
 
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": question}]
-        )
+        if not question:
+            print("No question received")
+            break
 
-        action = response.choices[0].message.content
+        try:
+            response = client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=[{"role": "user", "content": question}]
+            )
+            action = response.choices[0].message.content.strip()
+        except:
+            print("LLM call failed")
+            break
 
-        step_res = requests.get(f"{HF_SPACE_URL}/step", params={"action": action})
-        step_data = step_res.json()
+        try:
+            step_res = requests.get(f"{HF_SPACE_URL}/step", params={"action": action})
+            step_data = step_res.json()
+        except:
+            print("Step failed")
+            break
 
         reward = step_data.get("reward", 0)
         done = step_data.get("done", True)
@@ -41,7 +57,8 @@ def run_episode():
 def main():
     scores = []
 
-    for _ in range(10):
+    for i in range(10):
+        print(f"Running episode {i+1}")
         score = run_episode()
         scores.append(score)
 
