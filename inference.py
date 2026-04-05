@@ -1,6 +1,6 @@
 import os
-import requests
 from openai import OpenAI
+from sql_query_env.client import SqlQueryEnv
 
 API_BASE_URL = os.getenv("API_BASE_URL")
 MODEL_NAME = os.getenv("MODEL_NAME")
@@ -12,10 +12,11 @@ client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
 
 def run_episode():
     try:
-        res = requests.get(f"{HF_SPACE_URL}/reset")
-        data = res.json()
-    except:
-        print("Reset failed")
+        env = SqlQueryEnv(base_url=HF_SPACE_URL)
+        result = env.reset()
+        data = result.observation
+    except Exception as e:
+        print("Reset failed:", e)
         return 0
 
     done = False
@@ -34,22 +35,20 @@ def run_episode():
                 messages=[{"role": "user", "content": question}]
             )
             action = response.choices[0].message.content.strip()
-        except:
-            print("LLM call failed")
+        except Exception as e:
+            print("LLM call failed:", e)
             break
 
         try:
-            step_res = requests.get(f"{HF_SPACE_URL}/step", params={"action": action})
-            step_data = step_res.json()
-        except:
-            print("Step failed")
+            result = env.step(action)
+            data = result.observation
+            reward = result.reward
+            done = result.done
+        except Exception as e:
+            print("Step failed:", e)
             break
 
-        reward = step_data.get("reward", 0)
-        done = step_data.get("done", True)
-
         total_reward += reward
-        data = step_data
 
     return total_reward
 
