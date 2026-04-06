@@ -11,6 +11,8 @@ class SqlQueryClient(Client):
             question=obs.get("question"),
             schema=obs.get("schema"),
             difficulty=obs.get("difficulty"),
+            reward=result.get("reward"),
+            done=result.get("done"),
             feedback=obs.get("feedback")
         )
 

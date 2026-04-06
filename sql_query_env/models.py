@@ -10,4 +10,6 @@ class SqlQueryObservation:
     question: str
     schema: str
     difficulty: str
+    reward: float
+    done: bool
     feedback: Optional[str] = None
