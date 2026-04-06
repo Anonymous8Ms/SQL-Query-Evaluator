@@ -1,157 +1,52 @@
-TASKS = [
-    # EASY
+SQL_TASKS = [
     {
         "id": 1,
-        "question": "Count total customers",
+        "question": "Select all customers from Bengaluru",
         "difficulty": "easy",
-        "schema": "customers(id, name)",
-        "expected_query": "SELECT COUNT(*) FROM customers",
-        "correct_output": [],
+        "schema": "customers(id, name, city, email)",
+        "expected_query": "SELECT * FROM customers WHERE city = 'Bengaluru'",
+        "correct_output": [(1, "Anuttama", "Bengaluru", "a@email.com")],
         "required_tables": ["customers"],
-        "required_keywords": ["COUNT"]
+        "required_keywords": ["SELECT", "WHERE"]
     },
     {
         "id": 2,
-        "question": "Get all customers",
+        "question": "List all products in the Accessories category",
         "difficulty": "easy",
-        "schema": "customers(id, name)",
-        "expected_query": "SELECT * FROM customers",
-        "correct_output": [],
-        "required_tables": ["customers"],
-        "required_keywords": ["SELECT"]
+        "schema": "products(id, name, price, category)",
+        "expected_query": "SELECT * FROM products WHERE category = 'Accessories'",
+        "correct_output": [(2, "Mouse", 800, "Accessories"), (3, "Keyboard", 2200, "Accessories")],
+        "required_tables": ["products"],
+        "required_keywords": ["SELECT", "WHERE"]
     },
     {
         "id": 3,
-        "question": "Get all products",
+        "question": "Find the total number of orders",
         "difficulty": "easy",
-        "schema": "products(id, name, price)",
-        "expected_query": "SELECT * FROM products",
-        "correct_output": [],
-        "required_tables": ["products"],
-        "required_keywords": ["SELECT"]
-    },
-    {
-        "id": 4,
-        "question": "Find max product price",
-        "difficulty": "easy",
-        "schema": "products(id, name, price)",
-        "expected_query": "SELECT MAX(price) FROM products",
-        "correct_output": [],
-        "required_tables": ["products"],
-        "required_keywords": ["MAX"]
-    },
-    {
-        "id": 5,
-        "question": "Find min product price",
-        "difficulty": "easy",
-        "schema": "products(id, name, price)",
-        "expected_query": "SELECT MIN(price) FROM products",
-        "correct_output": [],
-        "required_tables": ["products"],
-        "required_keywords": ["MIN"]
-    },
-
-    # MEDIUM
-    {
-        "id": 6,
-        "question": "Get all orders with customer names",
-        "difficulty": "medium",
-        "schema": "orders, customers",
-        "expected_query": "SELECT * FROM orders JOIN customers ON orders.customer_id = customers.id",
-        "correct_output": [],
-        "required_tables": ["orders", "customers"],
-        "required_keywords": ["JOIN"]
-    },
-    {
-        "id": 7,
-        "question": "Get products with price > 100",
-        "difficulty": "medium",
-        "schema": "products(id, name, price)",
-        "expected_query": "SELECT * FROM products WHERE price > 100",
-        "correct_output": [],
-        "required_tables": ["products"],
-        "required_keywords": ["WHERE"]
-    },
-    {
-        "id": 8,
-        "question": "Get orders for customer_id = 1",
-        "difficulty": "medium",
-        "schema": "orders(id, customer_id)",
-        "expected_query": "SELECT * FROM orders WHERE customer_id = 1",
-        "correct_output": [],
-        "required_tables": ["orders"],
-        "required_keywords": ["WHERE"]
-    },
-    {
-        "id": 9,
-        "question": "Join order_items with products",
-        "difficulty": "medium",
-        "schema": "order_items, products",
-        "expected_query": "SELECT * FROM order_items JOIN products ON order_items.product_id = products.id",
-        "correct_output": [],
-        "required_tables": ["order_items", "products"],
-        "required_keywords": ["JOIN"]
-    },
-    {
-        "id": 10,
-        "question": "Get total number of orders",
-        "difficulty": "medium",
-        "schema": "orders(id)",
+        "schema": "orders(id, customer_id, total, date)",
         "expected_query": "SELECT COUNT(*) FROM orders",
-        "correct_output": [],
+        "correct_output": [(4,)],
         "required_tables": ["orders"],
         "required_keywords": ["COUNT"]
     },
-
-    # HARD
     {
-        "id": 11,
-        "question": "Count orders per customer",
-        "difficulty": "hard",
-        "schema": "orders(customer_id)",
-        "expected_query": "SELECT customer_id, COUNT(*) FROM orders GROUP BY customer_id",
-        "correct_output": [],
-        "required_tables": ["orders"],
-        "required_keywords": ["GROUP BY"]
+        "id": 4,
+        "question": "Get names of customers who placed an order on 2026-01-15",
+        "difficulty": "medium",
+        "schema": "customers(id, name), orders(customer_id, date)",
+        "expected_query": "SELECT name FROM customers JOIN orders ON customers.id = orders.customer_id WHERE date = '2026-01-15'",
+        "correct_output": [("Rahul",)],
+        "required_tables": ["customers", "orders"],
+        "required_keywords": ["JOIN", "WHERE"]
     },
     {
-        "id": 12,
-        "question": "Get top 5 expensive products",
-        "difficulty": "hard",
-        "schema": "products(price)",
-        "expected_query": "SELECT * FROM products ORDER BY price DESC LIMIT 5",
-        "correct_output": [],
-        "required_tables": ["products"],
-        "required_keywords": ["ORDER BY", "LIMIT"]
-    },
-    {
-        "id": 13,
-        "question": "Get customers with more than 2 orders",
-        "difficulty": "hard",
-        "schema": "orders(customer_id)",
-        "expected_query": "SELECT customer_id FROM orders GROUP BY customer_id HAVING COUNT(*) > 2",
-        "correct_output": [],
-        "required_tables": ["orders"],
-        "required_keywords": ["GROUP BY", "HAVING"]
-    },
-    {
-        "id": 14,
-        "question": "Find average product price",
-        "difficulty": "hard",
-        "schema": "products(price)",
-        "expected_query": "SELECT AVG(price) FROM products",
-        "correct_output": [],
-        "required_tables": ["products"],
-        "required_keywords": ["AVG"]
-    },
-    {
-        "id": 15,
-        "question": "Get latest order",
-        "difficulty": "hard",
-        "schema": "orders(id)",
-        "expected_query": "SELECT * FROM orders ORDER BY id DESC LIMIT 1",
-        "correct_output": [],
-        "required_tables": ["orders"],
-        "required_keywords": ["ORDER BY", "LIMIT"]
+        "id": 5,
+        "question": "List products ordered by customer with ID 1",
+        "difficulty": "medium",
+        "schema": "products(name), order_items(product_id), orders(id, customer_id)",
+        "expected_query": "SELECT p.name FROM products p JOIN order_items oi ON p.id = oi.product_id JOIN orders o ON oi.order_id = o.id WHERE o.customer_id = 1",
+        "correct_output": [("Keyboard",), ("Mouse",), ("Monitor",)],
+        "required_tables": ["products", "order_items", "orders"],
+        "required_keywords": ["JOIN", "WHERE"]
     }
 ]
