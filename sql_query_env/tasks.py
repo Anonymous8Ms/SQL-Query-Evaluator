@@ -15,7 +15,10 @@ SQL_TASKS = [
         "difficulty": "easy",
         "schema": "products(id, name, price, category)",
         "expected_query": "SELECT * FROM products WHERE category = 'Accessories'",
-        "correct_output": [(2, "Mouse", 800, "Accessories"), (3, "Keyboard", 2200, "Accessories")],
+        "correct_output": [
+            (2, "Mouse", 800, "Accessories"),
+            (3, "Keyboard", 2200, "Accessories")
+        ],
         "required_tables": ["products"],
         "required_keywords": ["SELECT", "WHERE"]
     },
@@ -43,9 +46,13 @@ SQL_TASKS = [
         "id": 5,
         "question": "List products ordered by customer with ID 1",
         "difficulty": "medium",
-        "schema": "products(name), order_items(product_id), orders(id, customer_id)",
+        "schema": "products(id, name), order_items(product_id, order_id), orders(id, customer_id)",
         "expected_query": "SELECT p.name FROM products p JOIN order_items oi ON p.id = oi.product_id JOIN orders o ON oi.order_id = o.id WHERE o.customer_id = 1",
-        "correct_output": [("Keyboard",), ("Mouse",), ("Monitor",)],
+        "correct_output": [
+            ("Keyboard",),
+            ("Mouse",),
+            ("Monitor",)
+        ],
         "required_tables": ["products", "order_items", "orders"],
         "required_keywords": ["JOIN", "WHERE"]
     }
