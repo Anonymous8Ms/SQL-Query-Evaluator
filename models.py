@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 try:
     from openenv.core.types import Action, Observation
@@ -18,6 +18,8 @@ class SqlQueryAction(Action):
 
 
 class SqlQueryObservation(Observation):
+    model_config = ConfigDict(populate_by_name=True)
+
     schema_text: str = Field(..., alias="schema", description="The database schema information")
     question: str = Field(..., description="The SQL question to solve")
     difficulty: str = Field(..., description="Task difficulty level")
@@ -25,3 +27,6 @@ class SqlQueryObservation(Observation):
     done: bool = Field(False, description="Whether the episode is finished")
     feedback: str = Field("", description="Feedback on the last query")
 
+    @property
+    def schema(self) -> str:
+        return self.schema_text

@@ -85,11 +85,34 @@ export FALLBACK_MODEL_NAMES="gpt-4.1-mini,meta-llama-3.1-70b-instruct"
 ```
 
 ## Running the Project
-python3 -m sql_query_env.test_env
+.venv/bin/python -m sql_query_env.test_env
 Question: List products ordered by customer with ID 1
 Score: 0.15
 Feedback: Query executed successfully | No match | Missing tables | Missing keywords
 Done: True
+
+To run the API locally:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python app.py
+```
+
+To deploy on Hugging Face Spaces:
+
+```bash
+git add .
+git commit -m "Deploy Space"
+git push huggingface main
+```
+
+If the remote branch must be replaced entirely:
+
+```bash
+git push --force huggingface main
+```
 
 
 ---
@@ -106,7 +129,7 @@ Done: True
 
 - SQL tasks are predefined in `tasks.py`
 - The system evaluates both correctness and query structure
-- Warning related to `schema` field can be safely ignored
+- The repo now supports both the root-level merged layout and legacy `sql_query_env.*` imports for compatibility during deployment
 
 ---
 

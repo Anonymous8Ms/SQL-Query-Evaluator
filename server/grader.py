@@ -55,3 +55,11 @@ def grade_query(ai_query: str, task: dict, db_connection):
         "feedback": " | ".join(feedback_msgs),
     }
 
+
+class SQLGrader:
+    """
+    Backward-compatible wrapper for older deployments that expect a class-based grader.
+    """
+
+    def grade(self, ai_query: str, task: dict, db_connection):
+        return grade_query(ai_query=ai_query, task=task, db_connection=db_connection)

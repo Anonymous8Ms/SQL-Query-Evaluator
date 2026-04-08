@@ -1,1 +1,1 @@
-from server.grader import grade_query
+from server.grader import SQLGrader, grade_query
