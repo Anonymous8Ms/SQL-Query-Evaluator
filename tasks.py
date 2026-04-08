@@ -1,0 +1,48 @@
+SQL_TASKS = [
+    {
+        "id": 1,
+        "question": "Select all customers from Bengaluru",
+        "difficulty": "easy",
+        "schema": "customers(id, name, city, email)",
+        "correct_output": [(1, "Anuttama", "Bengaluru", "a@email.com")],
+        "required_tables": ["customers"],
+        "required_keywords": ["SELECT", "WHERE"],
+    },
+    {
+        "id": 2,
+        "question": "List all products in the Accessories category",
+        "difficulty": "easy",
+        "schema": "products(id, name, price, category)",
+        "correct_output": [(2, "Mouse", 800, "Accessories"), (3, "Keyboard", 2200, "Accessories")],
+        "required_tables": ["products"],
+        "required_keywords": ["SELECT", "WHERE"],
+    },
+    {
+        "id": 3,
+        "question": "Find the total number of orders",
+        "difficulty": "easy",
+        "schema": "orders(id, customer_id, total, date)",
+        "correct_output": [(4,)],
+        "required_tables": ["orders"],
+        "required_keywords": ["COUNT"],
+    },
+    {
+        "id": 4,
+        "question": "Get names of customers who placed an order on 2026-01-15",
+        "difficulty": "medium",
+        "schema": "customers(id, name), orders(customer_id, date)",
+        "correct_output": [("Rahul",)],
+        "required_tables": ["customers", "orders"],
+        "required_keywords": ["JOIN", "WHERE"],
+    },
+    {
+        "id": 5,
+        "question": "List product names ordered by customer with ID 1",
+        "difficulty": "medium",
+        "schema": "products(name), order_items(product_id), orders(id, customer_id)",
+        "correct_output": [("Keyboard",), ("Mouse",), ("Monitor",)],
+        "required_tables": ["products", "order_items", "orders"],
+        "required_keywords": ["JOIN", "WHERE"],
+    },
+]
+
