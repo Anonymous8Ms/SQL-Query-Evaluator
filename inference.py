@@ -1,15 +1,112 @@
 import os
+import time
+import random
 from openai import OpenAI
+from dotenv import load_dotenv
 
 from sql_query_env.client import SqlQueryClient
 from sql_query_env.models import SqlQueryAction
+
+load_dotenv()
 
 API_BASE_URL = os.getenv("API_BASE_URL")
 MODEL_NAME = os.getenv("MODEL_NAME")
 HF_TOKEN = os.getenv("HF_TOKEN")
 HF_SPACE_URL = os.getenv("HF_SPACE_URL")
+FALLBACK_MODEL_NAMES = os.getenv("FALLBACK_MODEL_NAMES", "")
 
 client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
+
+
+def get_candidate_models():
+    models = []
+    primary_model = (MODEL_NAME or "").strip()
+    if primary_model:
+        models.append(primary_model)
+
+    for model in FALLBACK_MODEL_NAMES.split(","):
+        cleaned = model.strip()
+        if cleaned and cleaned not in models:
+            models.append(cleaned)
+
+    return models
+
+
+def validate_configuration():
+    missing = [
+        name
+        for name, value in (
+            ("API_BASE_URL", API_BASE_URL),
+            ("HF_TOKEN", HF_TOKEN),
+            ("HF_SPACE_URL", HF_SPACE_URL),
+        )
+        if not value
+    ]
+
+    if missing:
+        raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
+
+    if not get_candidate_models():
+        raise ValueError(
+            "No model configured. Set MODEL_NAME or MODEL_NAME with FALLBACK_MODEL_NAMES."
+        )
+
+
+def is_capacity_error(exc):
+    error_msg = str(exc).lower()
+    return (
+        "503" in error_msg
+        or "capacity" in error_msg
+        or "unavailable" in error_msg
+        or "exhausted" in error_msg
+    )
+
+
+def call_llm_with_retry(question, max_retries=5, base_delay=1.0, max_delay=60.0):
+    """
+    Call the LLM and fall back across candidate models when capacity is exhausted.
+    """
+    models = get_candidate_models()
+    last_capacity_error = None
+
+    for model_name in models:
+        for attempt in range(max_retries):
+            try:
+                response = client.chat.completions.create(
+                    model=model_name,
+                    messages=[{"role": "user", "content": question}],
+                )
+                return response.choices[0].message.content.strip()
+
+            except Exception as exc:
+                if is_capacity_error(exc):
+                    last_capacity_error = exc
+                    if attempt < max_retries - 1:
+                        delay = min(base_delay * (2 ** attempt) + random.uniform(0, 1), max_delay)
+                        print(
+                            f"Model {model_name} unavailable "
+                            f"(attempt {attempt + 1}/{max_retries}). "
+                            f"Retrying in {delay:.1f} seconds..."
+                        )
+                        time.sleep(delay)
+                        continue
+
+                    print(
+                        f"Model {model_name} remained unavailable after {max_retries} attempts. "
+                        "Trying the next configured model..."
+                    )
+                    break
+
+                print(f"LLM call failed with unexpected error on model {model_name}: {exc}")
+                raise
+
+    if last_capacity_error is not None:
+        raise RuntimeError(
+            "All configured models are unavailable. "
+            "Update MODEL_NAME / FALLBACK_MODEL_NAMES to models with available capacity."
+        ) from last_capacity_error
+
+    raise RuntimeError("No model call was attempted.")
 
 
 def run_episode():
@@ -26,13 +123,9 @@ def run_episode():
                     break
 
                 try:
-                    response = client.chat.completions.create(
-                        model=MODEL_NAME,
-                        messages=[{"role": "user", "content": question}],
-                    )
-                    action = response.choices[0].message.content.strip()
+                    action = call_llm_with_retry(question)
                 except Exception as exc:
-                    print("LLM call failed:", exc)
+                    print("LLM call failed after retries:", exc)
                     break
 
                 try:
@@ -50,6 +143,7 @@ def run_episode():
 
 
 def main():
+    validate_configuration()
     scores = []
 
     for i in range(10):

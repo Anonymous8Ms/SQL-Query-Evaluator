@@ -1,3 +1,13 @@
+---
+title: SQL Query Env
+emoji: "🗃️"
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # SQL Query Evaluator
 
 ## Overview
@@ -54,6 +64,26 @@ cd SQL-Query-Evaluator
 
 ### 2. Install Dependencies
 pip3 install -r requirements.txt
+
+### 3. Configure Inference
+Set these environment variables before running `inference.py`:
+
+- `API_BASE_URL`: OpenAI-compatible inference endpoint
+- `HF_TOKEN`: API key / bearer token for that endpoint
+- `HF_SPACE_URL`: URL for the SQL environment service
+- `MODEL_NAME`: primary model name
+- `FALLBACK_MODEL_NAMES`: optional comma-separated fallback models used when the primary model returns `503` or capacity errors
+
+Example:
+
+```bash
+export API_BASE_URL="https://your-inference-endpoint/v1"
+export HF_TOKEN="your-token"
+export HF_SPACE_URL="https://your-space-url"
+export MODEL_NAME="claude-sonnet-4-6"
+export FALLBACK_MODEL_NAMES="gpt-4.1-mini,meta-llama-3.1-70b-instruct"
+```
+
 ## Running the Project
 python3 -m sql_query_env.test_env
 Question: List products ordered by customer with ID 1
@@ -88,5 +118,3 @@ Done: True
 - Deploy as API
 
 ---
-
-
