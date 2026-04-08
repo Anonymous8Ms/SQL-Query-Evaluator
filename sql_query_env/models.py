@@ -1,8 +1,21 @@
-from openenv.core.env_server.types import Action, Observation
-from pydantic import Field
+from pydantic import BaseModel, Field
+
+try:
+    from openenv.core.types import Action, Observation
+except ImportError:  # pragma: no cover - compatibility with older or missing OpenEnv installs
+    try:
+        from openenv.core.env_server.types import Action, Observation
+    except ImportError:  # pragma: no cover - allow local testing without openenv-core
+        class Action(BaseModel):
+            pass
+
+        class Observation(BaseModel):
+            pass
+
 
 class SqlQueryAction(Action):
     sql_query: str = Field(..., description="The SQL query to execute")
+
 
 class SqlQueryObservation(Observation):
     question: str = Field(..., description="The SQL question to solve")
