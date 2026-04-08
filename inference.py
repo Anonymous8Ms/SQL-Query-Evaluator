@@ -1,6 +1,6 @@
 import os
 from openai import OpenAI
-from sql_query_env.client import SqlQueryEnv
+from sql_query_env.client import SqlQueryClient
 
 API_BASE_URL = os.getenv("API_BASE_URL")
 MODEL_NAME = os.getenv("MODEL_NAME")
@@ -12,7 +12,7 @@ client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
 
 def run_episode():
     try:
-        env = SqlQueryEnv(base_url=HF_SPACE_URL)
+        env = SqlQueryClient(base_url=HF_SPACE_URL)
         result = env.reset()
         data = result.observation
     except Exception as e:

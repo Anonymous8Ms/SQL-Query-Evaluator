@@ -8,39 +8,45 @@ from ..tasks import SQL_TASKS
 class SqlQueryEnvironment(Env):
     def __init__(self):
         super().__init__()
-        self.db = get_db_connection()
-        self.current_task_idx = 0
+        self._db = get_db_connection()
+        self._task_idx = 0
+        self._current_task = None
 
     def reset(self, config: Dict[str, Any] = None) -> Tuple[SqlQueryObservation, Dict[str, Any]]:
-        self.current_task_idx = 0
-        task = SQL_TASKS[self.current_task_idx]
+        self._task_idx = 0
+        self._current_task = SQL_TASKS[self._task_idx]
+        
         observation = SqlQueryObservation(
-            question=task["question"],
-            schema=task["schema"],
-            difficulty=task["difficulty"],
+            question=self._current_task["question"],
+            schema=self._current_task["schema"],
+            difficulty=self._current_task["difficulty"],
             reward=0.0,
             done=False,
-            feedback="Environment reset. Please solve the first task."
+            feedback="Environment reset. solve the first task."
         )
         return observation, {"episode_id": "ep_0", "step_count": 0}
 
     def step(self, action: SqlQueryAction) -> Tuple[SqlQueryObservation, float, bool, Dict[str, Any]]:
-        task = SQL_TASKS[self.current_task_idx]
-        result = grade_query(action.sql_query, task, self.db)
+        # Grade the query using Person 2 logic
+        result = grade_query(
+            ai_query=action.sql_query,
+            task=self._current_task,
+            db_connection=self._db
+        )
         
         reward = result["score"]
         feedback = result["feedback"]
         
-        # In this simple env, we move to next task or end
-        self.current_task_idx += 1
-        done = self.current_task_idx >= len(SQL_TASKS)
+        # Advance to next task
+        self._task_idx += 1
+        done = self._task_idx >= len(SQL_TASKS)
         
         if not done:
-            next_task = SQL_TASKS[self.current_task_idx]
+            self._current_task = SQL_TASKS[self._task_idx]
             observation = SqlQueryObservation(
-                question=next_task["question"],
-                schema=next_task["schema"],
-                difficulty=next_task["difficulty"],
+                question=self._current_task["question"],
+                schema=self._current_task["schema"],
+                difficulty=self._current_task["difficulty"],
                 reward=reward,
                 done=done,
                 feedback=feedback
@@ -55,4 +61,4 @@ class SqlQueryEnvironment(Env):
                 feedback=feedback
             )
             
-        return observation, reward, done, {"step_count": self.current_task_idx}
+        return observation, reward, done, {"step_count": self._task_idx}

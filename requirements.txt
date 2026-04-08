@@ -1,7 +1,7 @@
+openenv-core
 fastapi
 uvicorn
-openai
-requests
 pydantic
+openai
 python-dotenv
-openenv-core
+sqlite3
