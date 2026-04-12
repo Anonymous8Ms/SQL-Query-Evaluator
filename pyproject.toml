@@ -3,6 +3,17 @@ name = "sql-query-evaluator"
 version = "0.1.0"
 description = "SQL query evaluation environment for OpenEnv and Hugging Face Spaces."
 requires-python = ">=3.11"
+dependencies = [
+    "openenv-core>=0.2.0",
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "openai",
+    "python-dotenv",
+]
+
+[project.scripts]
+sql-query-env-server = "sql_query_env.server.app:main"
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
