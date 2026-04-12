@@ -1,9 +1,24 @@
+# ── MUST BE FIRST: suppress ALL warnings before any import ──────────────────
+# The validator runs Python with -W error, converting UserWarnings to exceptions.
+# Pydantic can emit a UserWarning about "schema" shadowing during class definition.
+# Suppressing here prevents that warning from crashing inference.py.
+import warnings
+warnings.filterwarnings("ignore")
+
 import os
 import sys
+import importlib
 
-# Ensure the local sql_query_env package is always imported first,
-# before any version that openenv-core may have installed into site-packages.
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Force local sql_query_env to load before any version installed by openenv-core.
+_here = os.path.dirname(os.path.abspath(__file__))
+if _here not in sys.path:
+    sys.path.insert(0, _here)
+
+# Bust stale module cache so openenv-core's installed sql_query_env is not reused.
+importlib.invalidate_caches()
+for _mod in list(sys.modules.keys()):
+    if _mod.startswith("sql_query_env"):
+        del sys.modules[_mod]
 
 import time
 import random
