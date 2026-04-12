@@ -60,20 +60,27 @@ def _http_post(url, payload=None, timeout=60):
         raise RuntimeError(f"Connection error: {exc.reason}")
 
 
-def env_reset():
-    """Reset the environment. Returns observation dict."""
-    result = _http_post(f"{HF_SPACE_URL}/reset")
-    return result.get("observation", {})
+class ObjectWrapper:
+    def __init__(self, d):
+        for k, v in d.items():
+            setattr(self, k, v)
+    def get(self, k, default=None):
+        return getattr(self, k, default)
 
+class HttpEnv:
+    def step(self, action):
+        result = _http_post(f"{HF_SPACE_URL}/step", {"sql_query": action})
+        obs    = ObjectWrapper(result.get("observation", {}))
+        reward = float(result.get("reward", 0.0))
+        done   = bool(result.get("done", False))
+        info   = result.get("info", {})
+        return obs, reward, done, info
+        
+    def reset(self):
+        result = _http_post(f"{HF_SPACE_URL}/reset")
+        return ObjectWrapper(result.get("observation", {}))
 
-def env_step(sql_query):
-    """Execute one step. Returns (observation_dict, reward, done)."""
-    result = _http_post(f"{HF_SPACE_URL}/step", {"sql_query": sql_query})
-    obs    = result.get("observation", {})
-    reward = float(result.get("reward", 0.0))
-    done   = bool(result.get("done", False))
-    return obs, reward, done
-
+env = HttpEnv()
 
 # ── LLM helpers ───────────────────────────────────────────────────────────────
 
@@ -162,47 +169,42 @@ def _clean_sql(raw):
 
 def run_episode(episode_num: int) -> float:
     try:
-        obs = env_reset()
+        task = env.reset()
         total_reward = 0.0
         step_num = 0
 
         print(f"[START] episode={episode_num}")
 
-        while not obs.get("done", False):
-            question = obs.get("question", "")
+        while not getattr(task, "done", False):
+            question = task.get("question", "")
             if not question:
                 print("No question received — ending episode.")
                 break
 
-            # Accept both 'db_schema' (new) and 'schema' (legacy HF Space)
-            db_schema = obs.get("db_schema", "") or obs.get("schema", "")
-
-            prompt = (
-                "Write ONLY a single SQL SELECT query with no explanation.\n"
-                f"Question: {question}\n"
-                f"Schema:\n{db_schema}"
-            )
+            prompt = f"Write ONLY a SQL query for: {task.get('question')}\nSchema: {task.get('db_schema')}"
 
             try:
                 raw_action = call_llm_with_retry(prompt)
-                sql_query  = _clean_sql(raw_action)
+                action = _clean_sql(raw_action)
             except Exception as exc:
                 print(f"LLM failed: {exc}")
                 break
 
             try:
-                obs, reward, done = env_step(sql_query)
-                total_reward += reward
-                step_num += 1
-                is_correct = obs.get("is_correct", False)
-                print(
-                    f"[STEP] episode={episode_num} step={step_num} "
-                    f"reward={reward:.4f} is_correct={is_correct} "
-                    f"query={sql_query[:80]!r}"
-                )
-            except Exception as exc:
-                print(f"Step failed: {exc}")
-                break
+                obs, reward, done, info = env.step(action)
+            except Exception as e:
+                print("ERROR:", str(e))
+                continue
+
+            total_reward += reward
+            step_num += 1
+            is_correct = getattr(obs, "is_correct", False)
+            print(
+                f"[STEP] episode={episode_num} step={step_num} "
+                f"reward={reward:.4f} is_correct={is_correct} "
+                f"query={action[:80]!r}"
+            )
+            task = obs
 
         print(f"[END] episode={episode_num} total_reward={total_reward:.4f}")
         return total_reward

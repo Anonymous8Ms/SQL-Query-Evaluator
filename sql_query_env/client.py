@@ -16,12 +16,15 @@ class SqlQueryClient(EnvClient):
     def _parse_result(self, result):
         obs = result.get("observation", {})
         return SqlQueryObservation(
+            task_id=obs.get("task_id", 0),
             question=obs.get("question", ""),
             db_schema=obs.get("db_schema", ""),
-            difficulty=obs.get("difficulty", ""),
+            difficulty=obs.get("difficulty", "easy"),
             reward=result.get("reward", 0.0),
-            done=result.get("done", False),
             feedback=obs.get("feedback", ""),
+            executed_output=obs.get("executed_output", None),
+            is_correct=obs.get("is_correct", False),
+            done=result.get("done", False),
         )
 
     def _parse_state(self, payload):

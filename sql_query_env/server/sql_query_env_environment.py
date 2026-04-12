@@ -25,13 +25,15 @@ class SqlQueryEnvironment(Env):
         self._current_task = SQL_TASKS[self._task_idx]
 
         observation = SqlQueryObservation(
-            task_id=self._current_task["id"],
-            question=self._current_task["question"],
-            db_schema=self._current_task["db_schema"],
-            difficulty=self._current_task["difficulty"],
+            task_id=self._current_task.get("id", 0),
+            question=self._current_task.get("question", ""),
+            db_schema=self._current_task.get("db_schema", ""),
+            difficulty=self._current_task.get("difficulty", "easy"),
             reward=0.0,
-            done=False,
             feedback="Environment reset. Solve the first task.",
+            executed_output=None,
+            is_correct=False,
+            done=False,
         )
         return observation, {"episode_id": "ep_0", "step_count": 0}
 
@@ -39,14 +41,19 @@ class SqlQueryEnvironment(Env):
         if self._current_task is None:
             raise RuntimeError("Environment must be reset before calling step().")
 
-        result = grade_query(
-            ai_query=action.sql_query,
-            task=self._current_task,
-            db_connection=self._db,
-        )
-
-        reward = result["score"]
-        feedback = result["feedback"]
+        try:
+            result = grade_query(
+                ai_query=action.sql_query,
+                task=self._current_task,
+                db_connection=self._db,
+            )
+            reward = result.get("score", 0.0)
+            feedback = result.get("feedback", "")
+        except Exception as e:
+            reward = 0.0
+            feedback = str(e)
+            
+        is_correct = (reward > 0.0)
 
         self._task_idx += 1
         done = self._task_idx >= len(SQL_TASKS)
@@ -54,13 +61,15 @@ class SqlQueryEnvironment(Env):
         if not done:
             self._current_task = SQL_TASKS[self._task_idx]
             observation = SqlQueryObservation(
-                task_id=self._current_task["id"],
-                question=self._current_task["question"],
-                db_schema=self._current_task["db_schema"],
-                difficulty=self._current_task["difficulty"],
+                task_id=self._current_task.get("id", 0),
+                question=self._current_task.get("question", ""),
+                db_schema=self._current_task.get("db_schema", ""),
+                difficulty=self._current_task.get("difficulty", "easy"),
                 reward=reward,
-                done=False,
                 feedback=feedback,
+                executed_output=None,
+                is_correct=is_correct,
+                done=False,
             )
         else:
             self._current_task = None
@@ -70,8 +79,10 @@ class SqlQueryEnvironment(Env):
                 db_schema="",
                 difficulty="",
                 reward=reward,
-                done=True,
                 feedback=feedback,
+                executed_output=None,
+                is_correct=is_correct,
+                done=True,
             )
 
         return observation, reward, done, {"step_count": self._task_idx}

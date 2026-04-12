@@ -32,7 +32,7 @@ def get_env() -> SqlQueryEnvironment:
     return _env
 
 
-# ── Request / Response schemas ─────────────────────────────────────────────────
+# ── Request / Response structures ─────────────────────────────────────────────────
 class ResetRequest(BaseModel):
     config: Optional[Dict[str, Any]] = None
 
