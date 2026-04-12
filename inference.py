@@ -1,4 +1,10 @@
 import os
+import sys
+
+# Ensure the local sql_query_env package is always imported first,
+# before any version that openenv-core may have installed into site-packages.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import time
 import random
 from openai import OpenAI
