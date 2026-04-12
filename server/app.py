@@ -22,7 +22,7 @@ def state():
 
 def main():
     uvicorn.run(
-        "server.app:app",   # 🔥 VERY IMPORTANT
+        app,   # ✅ IMPORTANT: NOT "server.app:app"
         host="0.0.0.0",
         port=7860,
     )
