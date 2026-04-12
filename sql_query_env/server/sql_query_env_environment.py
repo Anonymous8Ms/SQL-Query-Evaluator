@@ -25,6 +25,7 @@ class SqlQueryEnvironment(Env):
         self._current_task = SQL_TASKS[self._task_idx]
 
         observation = SqlQueryObservation(
+            task_id=self._current_task["id"],
             question=self._current_task["question"],
             db_schema=self._current_task["db_schema"],
             difficulty=self._current_task["difficulty"],
@@ -53,6 +54,7 @@ class SqlQueryEnvironment(Env):
         if not done:
             self._current_task = SQL_TASKS[self._task_idx]
             observation = SqlQueryObservation(
+                task_id=self._current_task["id"],
                 question=self._current_task["question"],
                 db_schema=self._current_task["db_schema"],
                 difficulty=self._current_task["difficulty"],
@@ -63,6 +65,7 @@ class SqlQueryEnvironment(Env):
         else:
             self._current_task = None
             observation = SqlQueryObservation(
+                task_id=0,
                 question="No more tasks.",
                 db_schema="",
                 difficulty="",
@@ -72,4 +75,3 @@ class SqlQueryEnvironment(Env):
             )
 
         return observation, reward, done, {"step_count": self._task_idx}
-
