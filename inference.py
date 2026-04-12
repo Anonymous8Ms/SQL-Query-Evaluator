@@ -24,7 +24,7 @@ FALLBACK_MODEL_NAMES = os.getenv("FALLBACK_MODEL_NAMES", "")
 openai_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
 
 
-# ── HTTP helpers (no sql_query_env import — avoids Pydantic schema warning) ───
+# ── HTTP helpers (pure stdlib — no sql_query_env package import needed) ───────
 
 def _http_post(url, payload=None, timeout=60):
     """POST JSON to url, return parsed dict. Raises RuntimeError on failure."""
@@ -147,8 +147,7 @@ def run_episode(episode_num: int) -> float:
                 print("No question received — ending episode.")
                 break
 
-            # HF Space returns "schema" key (old server), fall back gracefully
-            db_schema = obs.get("db_schema", obs.get("schema", ""))
+            db_schema = obs.get("db_schema", "")
 
             prompt = (
                 "Write ONLY a single SQL SELECT query with no explanation.\n"

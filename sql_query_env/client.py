@@ -17,7 +17,7 @@ class SqlQueryClient(EnvClient):
         obs = result.get("observation", {})
         return SqlQueryObservation(
             question=obs.get("question", ""),
-            db_schema=obs.get("db_schema", obs.get("schema", "")),
+            db_schema=obs.get("db_schema", ""),
             difficulty=obs.get("difficulty", ""),
             reward=result.get("reward", 0.0),
             done=result.get("done", False),
