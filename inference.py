@@ -9,22 +9,37 @@ import time
 import random
 import urllib.request
 import urllib.error
-from openai import OpenAI
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# ── Environment variables (required by hackathon checklist) ───────────────────
-API_BASE_URL = os.getenv("API_BASE_URL", "<your-api-base-url>")
-MODEL_NAME = os.getenv("MODEL_NAME", "<your-active-model>")
-HF_TOKEN = os.getenv("HF_TOKEN")
-HF_SPACE_URL = os.getenv("HF_SPACE_URL", "").rstrip("/")
-FALLBACK_MODEL_NAMES = os.getenv("FALLBACK_MODEL_NAMES", "")
+# ── Environment variables ─────────────────────────────────────────────────────
+API_BASE_URL       = os.getenv("API_BASE_URL", "").strip()
+MODEL_NAME         = os.getenv("MODEL_NAME", "").strip()
+HF_TOKEN           = os.getenv("HF_TOKEN", "").strip()
+HF_SPACE_URL       = os.getenv("HF_SPACE_URL", "").rstrip("/")
+FALLBACK_MODEL_NAMES = os.getenv("FALLBACK_MODEL_NAMES", "").strip()
 
-openai_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
+# ── OpenAI client created lazily inside functions — NOT at module level ───────
+# This prevents a crash when env vars are missing at import time.
+_openai_client = None
+
+def _get_client():
+    global _openai_client
+    if _openai_client is None:
+        try:
+            from openai import OpenAI
+            _openai_client = OpenAI(
+                base_url=API_BASE_URL or None,
+                api_key=HF_TOKEN or None,
+            )
+        except Exception as exc:
+            raise RuntimeError(f"Cannot create OpenAI client: {exc}") from exc
+    return _openai_client
 
 
-# ── HTTP helpers (pure stdlib — no sql_query_env package import needed) ───────
+# ── HTTP helpers (pure stdlib) ────────────────────────────────────────────────
 
 def _http_post(url, payload=None, timeout=60):
     """POST JSON to url, return parsed dict. Raises RuntimeError on failure."""
@@ -54,9 +69,9 @@ def env_reset():
 def env_step(sql_query):
     """Execute one step. Returns (observation_dict, reward, done)."""
     result = _http_post(f"{HF_SPACE_URL}/step", {"sql_query": sql_query})
-    obs = result.get("observation", {})
+    obs    = result.get("observation", {})
     reward = float(result.get("reward", 0.0))
-    done = bool(result.get("done", False))
+    done   = bool(result.get("done", False))
     return obs, reward, done
 
 
@@ -64,9 +79,8 @@ def env_step(sql_query):
 
 def get_candidate_models():
     models = []
-    primary = (MODEL_NAME or "").strip()
-    if primary:
-        models.append(primary)
+    if MODEL_NAME:
+        models.append(MODEL_NAME)
     for m in FALLBACK_MODEL_NAMES.split(","):
         m = m.strip()
         if m and m not in models:
@@ -78,7 +92,7 @@ def validate_configuration():
     missing = [
         name for name, val in (
             ("API_BASE_URL", API_BASE_URL),
-            ("HF_TOKEN", HF_TOKEN),
+            ("HF_TOKEN",     HF_TOKEN),
             ("HF_SPACE_URL", HF_SPACE_URL),
         ) if not val
     ]
@@ -94,12 +108,14 @@ def is_capacity_error(exc):
 
 
 def call_llm_with_retry(prompt, max_retries=5, base_delay=1.0, max_delay=60.0):
+    client = _get_client()
     models = get_candidate_models()
     last_cap_err = None
+
     for model_name in models:
         for attempt in range(max_retries):
             try:
-                resp = openai_client.chat.completions.create(
+                resp = client.chat.completions.create(
                     model=model_name,
                     messages=[{"role": "user", "content": prompt}],
                 )
@@ -108,14 +124,25 @@ def call_llm_with_retry(prompt, max_retries=5, base_delay=1.0, max_delay=60.0):
                 if is_capacity_error(exc):
                     last_cap_err = exc
                     if attempt < max_retries - 1:
-                        delay = min(base_delay * (2 ** attempt) + random.uniform(0, 1), max_delay)
-                        print(f"Model {model_name} unavailable (attempt {attempt+1}/{max_retries}). Retry in {delay:.1f}s")
+                        delay = min(
+                            base_delay * (2 ** attempt) + random.uniform(0, 1),
+                            max_delay,
+                        )
+                        print(
+                            f"Model {model_name} unavailable "
+                            f"(attempt {attempt+1}/{max_retries}). "
+                            f"Retry in {delay:.1f}s"
+                        )
                         time.sleep(delay)
                         continue
-                    print(f"Model {model_name} exhausted after {max_retries} attempts, trying next.")
+                    print(
+                        f"Model {model_name} exhausted after {max_retries} "
+                        f"attempts, trying next."
+                    )
                     break
                 print(f"LLM error on {model_name}: {exc}")
                 raise
+
     if last_cap_err:
         raise RuntimeError("All models unavailable.") from last_cap_err
     raise RuntimeError("No model call was attempted.")
@@ -147,7 +174,8 @@ def run_episode(episode_num: int) -> float:
                 print("No question received — ending episode.")
                 break
 
-            db_schema = obs.get("db_schema", "")
+            # Accept both 'db_schema' (new) and 'schema' (legacy HF Space)
+            db_schema = obs.get("db_schema", "") or obs.get("schema", "")
 
             prompt = (
                 "Write ONLY a single SQL SELECT query with no explanation.\n"
@@ -157,7 +185,7 @@ def run_episode(episode_num: int) -> float:
 
             try:
                 raw_action = call_llm_with_retry(prompt)
-                sql_query = _clean_sql(raw_action)
+                sql_query  = _clean_sql(raw_action)
             except Exception as exc:
                 print(f"LLM failed: {exc}")
                 break
