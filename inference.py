@@ -143,17 +143,29 @@ def run_episode():
 
 
 def main():
-    validate_configuration()
+    try:
+        validate_configuration()
+    except ValueError as exc:
+        print(f"Configuration Error: {exc}")
+        return
+
     scores = []
+    try:
+        for i in range(10):
+            print(f"Running episode {i + 1}")
+            score = run_episode()
+            scores.append(score)
 
-    for i in range(10):
-        print(f"Running episode {i + 1}")
-        score = run_episode()
-        scores.append(score)
-
-    avg_score = sum(scores) / len(scores) if scores else 0.0
-    print("Average Score:", avg_score)
+        avg_score = sum(scores) / len(scores) if scores else 0.0
+        print(f"Average Score: {avg_score:.2f}")
+    except Exception as exc:
+        print(f"Runtime Error: {exc}")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nInterrupted by user.")
+    except Exception as exc:
+        print(f"FATAL: Unhandled exception: {exc}")

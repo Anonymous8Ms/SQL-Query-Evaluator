@@ -25,7 +25,7 @@ class SqlQueryEnvironment(Env):
 
         observation = SqlQueryObservation(
             question=self._current_task["question"],
-            schema=self._current_task["schema"],
+            db_schema=self._current_task["db_schema"],
             difficulty=self._current_task["difficulty"],
             reward=0.0,
             done=False,
@@ -53,7 +53,7 @@ class SqlQueryEnvironment(Env):
             self._current_task = SQL_TASKS[self._task_idx]
             observation = SqlQueryObservation(
                 question=self._current_task["question"],
-                schema=self._current_task["schema"],
+                db_schema=self._current_task["db_schema"],
                 difficulty=self._current_task["difficulty"],
                 reward=reward,
                 done=False,
@@ -63,7 +63,7 @@ class SqlQueryEnvironment(Env):
             self._current_task = None
             observation = SqlQueryObservation(
                 question="No more tasks.",
-                schema="",
+                db_schema="",
                 difficulty="",
                 reward=reward,
                 done=True,
