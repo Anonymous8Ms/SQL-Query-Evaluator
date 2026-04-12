@@ -130,12 +130,15 @@ def call_llm_with_retry(question, max_retries=5, base_delay=1.0, max_delay=60.0)
     raise RuntimeError("No model call was attempted.")
 
 
-def run_episode():
+def run_episode(episode_num: int):
     try:
         with SqlQueryClient(base_url=HF_SPACE_URL).sync() as env:
             result = env.reset()
             data = result.observation
             total_reward = 0.0
+            step_num = 0
+
+            print(f"[START] episode={episode_num}")
 
             while not data.done:
                 question = data.question
@@ -144,22 +147,45 @@ def run_episode():
                     break
 
                 try:
-                    action = call_llm_with_retry(question)
+                    db_schema = getattr(data, "db_schema", "")
+                    prompt = (
+                        f"Write ONLY a single SQL query. No explanation.\n"
+                        f"Question: {question}\n"
+                        f"Schema: {db_schema}"
+                    )
+                    action = call_llm_with_retry(prompt)
                 except Exception as exc:
-                    print("LLM call failed after retries:", exc)
+                    print(f"LLM call failed after retries: {exc}")
                     break
 
                 try:
+                    # Strip markdown code fences if present
+                    if "```" in action:
+                        parts = action.split("```")
+                        action = parts[1] if len(parts) > 1 else parts[0]
+                        if action.lower().startswith("sql"):
+                            action = action[3:]
+                    action = action.strip().split(";")[0].strip()
+
                     result = env.step(SqlQueryAction(sql_query=action))
                     data = result.observation
-                    total_reward += result.reward
+                    reward = getattr(result, "reward", 0.0)
+                    total_reward += reward
+                    step_num += 1
+                    is_correct = getattr(data, "is_correct", False)
+                    print(
+                        f"[STEP] episode={episode_num} step={step_num} "
+                        f"reward={reward:.4f} is_correct={is_correct} "
+                        f"query={action[:80]!r}"
+                    )
                 except Exception as exc:
-                    print("Step failed:", exc)
+                    print(f"Step failed: {exc}")
                     break
 
+            print(f"[END] episode={episode_num} total_reward={total_reward:.4f}")
             return total_reward
     except Exception as exc:
-        print("Reset failed:", exc)
+        print(f"[END] episode={episode_num} total_reward=0.0 error={exc}")
         return 0.0
 
 
@@ -168,19 +194,21 @@ def main():
         validate_configuration()
     except ValueError as exc:
         print(f"Configuration Error: {exc}")
+        print("Average Score: 0.00")
         return
 
     scores = []
     try:
         for i in range(10):
             print(f"Running episode {i + 1}")
-            score = run_episode()
+            score = run_episode(i + 1)
             scores.append(score)
 
         avg_score = sum(scores) / len(scores) if scores else 0.0
-        print(f"Average Score: {avg_score:.2f}")
+        print(f"Average Score: {avg_score:.4f}")
     except Exception as exc:
         print(f"Runtime Error: {exc}")
+        print("Average Score: 0.0000")
 
 
 if __name__ == "__main__":
