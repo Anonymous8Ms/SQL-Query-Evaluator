@@ -181,7 +181,7 @@ def run_episode(episode_num: int) -> float:
                 print("No question received — ending episode.")
                 break
 
-            prompt = f"Write ONLY a SQL query for: {task.get('question')}\nSchema: {task.get('db_schema')}"
+            prompt = f"Write ONLY a SQL query for: {task.get('question')}\nDatabase Schema: {task.get('db_schema')}"
 
             try:
                 raw_action = call_llm_with_retry(prompt)

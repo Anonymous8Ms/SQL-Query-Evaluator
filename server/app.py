@@ -1,47 +1,62 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 import uvicorn
+from pydantic import BaseModel
+from typing import Optional, Any, Dict
+import traceback
 
-# Create FastAPI app
+from sql_query_env.server.sql_query_env_environment import SqlQueryEnvironment
+from sql_query_env.models import SqlQueryAction, SqlQueryObservation
+
 app = FastAPI()
 
-# Root endpoint
+_env = None
+
+def get_env():
+    global _env
+    if _env is None:
+        _env = SqlQueryEnvironment()
+    return _env
+
+class ResetRequest(BaseModel):
+    config: Optional[Dict[str, Any]] = None
+
+class StepRequest(BaseModel):
+    sql_query: str = ""
+
 @app.get("/")
 def root():
     return {"message": "Server is running"}
 
-# Reset endpoint
 @app.post("/reset")
-def reset():
-    return {
-        "observation": {},
-        "info": {}
-    }
+def reset(request: ResetRequest = None):
+    try:
+        env = get_env()
+        config = request.config if request else None
+        obs, info = env.reset(config=config)
+        return {"observation": obs.model_dump(), "info": info}
+    except Exception as e:
+        return {"observation": {}, "info": {"error": str(e)}}
 
-# Step endpoint
 @app.post("/step")
-def step():
-    return {
-        "observation": {},
-        "reward": 0.0,
-        "done": False,
-        "info": {}
-    }
+def step(request: StepRequest):
+    try:
+        env = get_env()
+        action = SqlQueryAction(sql_query=request.sql_query)
+        obs, reward, done, info = env.step(action)
+        return {"observation": obs.model_dump(), "reward": float(reward), "done": bool(done), "info": info}
+    except Exception as e:
+        return {"observation": {}, "reward": 0.0, "done": False, "info": {"error": str(e)}}
 
-# State endpoint
 @app.get("/state")
 def state():
     return {"state": {}}
 
-
-# IMPORTANT: main() must be callable by validator
 def main():
     uvicorn.run(
-        app,               # ✅ VERY IMPORTANT (not string)
+        app,
         host="0.0.0.0",
-        port=7860
+        port=7860,
     )
 
-
-# REQUIRED for execution
 if __name__ == "__main__":
     main()
