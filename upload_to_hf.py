@@ -16,6 +16,7 @@ BRANCH = "main"
 
 # Files to upload
 FILES = [
+    "app.py",
     "Dockerfile",
     "openenv.yaml",
     "pyproject.toml",
