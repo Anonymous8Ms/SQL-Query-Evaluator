@@ -83,6 +83,7 @@ def upload_all_files(token, space_id):
             content = f.read()
         encoded = base64.b64encode(content).decode("utf-8")
         files_payload.append({
+            "operation": "addOrUpdate",
             "path": filepath,
             "content": encoded,
             "encoding": "base64"
@@ -90,9 +91,9 @@ def upload_all_files(token, space_id):
         print(f"  Queued: {filepath}")
     
     payload = json.dumps({
-        "commitTitle": "Phase 1 fix: self-contained /reset /step /health endpoints",
-        "commitDescription": "Fix: no openenv-core dependency, explicit endpoints, db_schema only",
-        "files": files_payload
+        "summary": "Phase 1 fix: self-contained /reset /step /health endpoints",
+        "description": "Fix: no openenv-core dependency, explicit endpoints, db_schema only",
+        "operations": files_payload
     }).encode("utf-8")
     
     commit_url = f"https://huggingface.co/api/spaces/{space_id}/commit/{BRANCH}"
@@ -126,19 +127,7 @@ if __name__ == "__main__":
         print("Usage: python3 upload_to_hf.py <HF_TOKEN> <SPACE_ID>")
         sys.exit(1)
     
-    # Verify token
-    req = urllib.request.Request(
-        "https://huggingface.co/api/whoami",
-        headers={"Authorization": f"Bearer {HF_TOKEN}"},
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode())
-            username = data.get("name") or data.get("user", {}).get("name", "unknown")
-            print(f"Logged in as: {username}")
-    except Exception as e:
-        print(f"Token validation failed: {e}")
-        sys.exit(1)
+    print("Skipping whoami token verification to prevent fine-grained token rejection...")
     
     success = upload_all_files(HF_TOKEN, SPACE_ID)
     if success:
