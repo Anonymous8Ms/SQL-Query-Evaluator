@@ -4,8 +4,8 @@ import random
 from openai import OpenAI
 from dotenv import load_dotenv
 
-from client import SqlQueryClient
-from models import SqlQueryAction
+from sql_query_env.client import SqlQueryClient
+from sql_query_env.models import SqlQueryAction
 
 load_dotenv()
 

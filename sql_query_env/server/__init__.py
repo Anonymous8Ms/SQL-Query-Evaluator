@@ -1,3 +1,2 @@
-from .sql_query_env_environment import SqlQueryEnvironment
+# Server package for the SQL Query environment.
 
-__all__ = ["SqlQueryEnvironment"]
