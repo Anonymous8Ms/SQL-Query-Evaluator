@@ -1,6 +1,6 @@
 spec_version: 1
 name: sql_query_env
 type: space
-runtime: fastapi
+runtime: docker
 app: sql_query_env.server.app:app
 port: 7860

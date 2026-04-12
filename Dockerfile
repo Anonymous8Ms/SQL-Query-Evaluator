@@ -1,10 +1,13 @@
-FROM python:3.11
+FROM python:3.11-slim
 
 WORKDIR /app
 
+# Copy everything
 COPY . .
 
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies + the package itself (editable so imports resolve)
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -e .
 
 EXPOSE 7860
 
