@@ -87,6 +87,11 @@ def step(request: StepRequest):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+@app.get("/state")
+def state():
+    return {"state": {}}
+
+
 # ── Optional openenv-core integration (does NOT break if missing) ─────────────
 try:
     from openenv.core.env_server import create_app as _create_app  # type: ignore
@@ -106,7 +111,7 @@ import uvicorn
 
 def main():
     uvicorn.run(
-        "sql_query_env.server.app:app",
+        "server.app:app",
         host="0.0.0.0",
         port=7860,
         reload=False
