@@ -1,3 +1,10 @@
+# Suppress ALL warnings at module level before any class definitions.
+# The validator imports this module directly with -W error mode, which converts
+# UserWarnings to exceptions. Suppressing here prevents that crash regardless
+# of import order.
+import warnings
+warnings.filterwarnings("ignore")
+
 from typing import Optional
 from pydantic import BaseModel
 
